@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload deal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    
+    <!-- FontAwesome -->    
+    <script src="https://kit.fontawesome.com/07bb6b2702.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/uqkvm6yhcyni3linqju0gdkk0dhvnotkusowd0wst5um79ol/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+</head>
+
+<body>
+    {% include 'header.html' %}
+    <div class="profile-info" style="background-color:#FAB301; ">
+      <div class="container">
+          <div class="profile-header">
+            <div class="col-4">
+              <div class="profile-picture" style="margin-top:10px;">
+                  {% if current_user.profile_picture %}
+                      <!-- Käyttäjän profiilikuvan näyttäminen -->
+                      <img src="{{ current_user.profile_picture }}" alt="Profile Picture">
+                  {% else %}
+                      <!-- Jos käyttäjällä ei ole profiilikuvaa, näytä oletuskuva tai paikantäyttökuva -->
+                      <img src="{{ url_for('static', filename='path/to/default_profile_image.jpg') }}" alt="Default Profile Picture">
+                  {% endif %}
+              </div>
+            </div>
+            <div class="col-8" style="margin-top:15px; margin-left:10px;color:#000;;">
+              <h3>{{ current_user.username }}</h3>
+              <p>Jäsen alkaen: {{ current_user.confirmed_on.strftime('%d %b %Y') }}</p>
+          </div>
+      </div>
+      </div>
+  </div>
+<main>
+  <div class="container mt-5"> 
+    {% with messages = get_flashed_messages() %} 
+    {% if messages %} 
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <ul class="list-unstyled mb-0"> 
+            {% for message in messages %} 
+            <li>{{ message }}</li> 
+            {% endfor %} 
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div> {% endif %} 
+    {% endwith %}
+ </div>
+
+        <div class="container mt-5">                   
+             <div class="row mb-3">                
+                    <h3>Lataa profiili kuva</h3>
+                    <form method="POST" action="{{ url_for('upload_profile_picture') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="form-group">
+                            <label for="profile_picture">Valitse kuva</label>
+                            <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/*" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Lataa profiili kuva</button>
+                    </form>                
+             </div>
+             
+             <div class="row mb-3">
+              <h3>Vaihda salasana:</h3>
+              <form method="POST" action="{{ url_for('change_password') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                  <label for="current_password">Vanha salasana</label>
+                  <input type="password" class="form-control" id="current_password" name="current_password" required>
+                </div>
+                <div class="form-group">
+                  <label for="new_password">Uusi salasana</label>
+                  <input type="password" class="form-control" id="new_password" name="new_password" required>
+                </div>
+                <div class="form-group">
+                  <label for="confirm_password">Uusi salasana uudestaan</label>
+                  <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                </div>
+                <div class="mb-3">
+                <button type="submit" class="btn btn-primary">Muokkaa salasana</button>
+              </div>
+              </form>
+            </div>
+          
+        
+            <div class="container">
+              <div class="col-md-12">
+                <h3>Omat jaetut tarjoukset</h3><hr>
+                {% if current_user.deals %}
+                <div class="row">
+                    {% for deal in current_user.deals %}
+                    
+                    <div class="card mb-3 "  >                
+                      <div class="row " >
+                          <div class="col-12 col-md-12 col-xl-3 d-flex align-items-center" > 
+                              {% if deal.images %} 
+                              {% set image_path = url_for('static', filename='img/deals/deal_' ~ deal.id ~ '/' ~ deal.images[0].filename) %} 
+                              <img src="{{ image_path }}" class="card-img-top img-fluid" alt="Deal Image"> 
+                              {% else %}
+                              <img src="{{ url_for('static', filename='img/default_image.jpg') }}" class="card-img-top img-fluid deal-image" alt="Default Image"> 
+                              {% endif %}
+                          </div>
+                          
+                          <div class="col-12 col-md-12 col-xl-9" >
+                              <div class="card-body">
+                                  <div class="row align-items-center"  >
+                                      <div class="col-6 col-lg-4"  >
+                                          <div class="mr-2 rounded-pill p-2 d-flex align-items-center" style="border:solid 1px; width:120px; border-color:rgb(196, 190, 190);" >                                        
+                                                  <div class="mr-4">
+                                                      <button class="btn btn-link"><i class="fa-solid fa-heart-crack fa-xl" style="color: #200be0;"></i></button>
+                                                  </div>
+                                                  <div class="mr-4">                                    
+                                                      {{ deal.total_votes() }}
+                                                  </div>
+                                                  <div class="mr-4">
+                                                      <button class="btn btn-link"><i class="fa-solid fa-heart fa-xl" style="color: #e00b0b;"></i></button>
+                                                  </div>                                        
+                                          </div>
+                                      </div>            
+                                              
+                                      <div class="col-4 d-none d-lg-block col-lg-4" style="color: #97a2b4;" >
+                                          <div class="d-flex align-items-center " >
+                                              {% if deal.expiration_date %} 
+                                              <i class="fa-solid fa-hourglass-half fa-xl"></i> {{ deal.expiration_date.strftime('%d.%m.%Y') }} 
+                                              {% else %}
+                                              <span></span> 
+                                              {% endif %}
+                                          </div> 
+                                      </div>
+                                      <div class="col-6 col-md-4" style="color: #97a2b4;">
+                                          <div class="d-flex align-items-center text-end">
+                                              <i class="fa-solid fa-arrow-trend-up fa-lg"></i> <span id="publishDate">{{ deal.publish_date.strftime('%d.%m.%Y') }}</span>
+                                      </div>
+                                     
+                                      </div>
+                                  </div>
+                              </div>
+                              <div class="card-body">
+                              <div class="row">
+                                  <div class="col-12">
+                                      <h4 >
+                                          <a href="{{ url_for('view_deal', deal_id=deal.id) }}" class="front-title" >
+                                              {{ deal.title }}</a>
+                                          </h4>
+                                  </div>
+                              </div>
+                               <div class="row" >   
+                                  <div class="col-12 col-lg-12"  >
+                                      <p class="card-text prices"> 
+                                          {% if deal.offer_price == 0 %} 
+                                              <span class="offer-price">Ilmainen</span> 
+                                          {% else %} 
+                                              <span class="offer-price">{{ deal.offer_price }}&euro;</span> 
+                                          {% endif %} 
+                                          <span class="original-price">{{ deal.regular_price }}&euro;</span> 
+                                          {% if deal.regular_price > 0 %}
+                                              <span class="discount">(- {{ ((deal.regular_price - deal.offer_price) / deal.regular_price * 100)|round|int }}%)</span>
+                                          {% endif %}
+                                      
+                                      
+                                          <span class="store">| {{ deal.store }}</span>
+                                      </p>
+                                      
+                                  </div>
+                                  <p class="card-text">
+                                      <p class="card-text details d-none d-md-block">
+                                          {% set lines_limit = 2 %} 
+                                          {{ deal.description.split('\n')[:lines_limit]|join('\n') }}{% if deal.description.split('\n')|length > lines_limit %}...{% endif %} 
+                                      </p>
+                                      <p class="card-text details_front d-none d-md-block d-md-none text-truncate"> 
+                                          {% set short_description = deal.description[:deal.description.find('\n', 0, deal.description.find('\n') + 1)] %} 
+                                          {{ short_description }}{% if short_description != deal.description %}...{% endif %} 
+                                      </p>
+                                  </p>
+                                  <div class="row">
+                                      <div class="col-6">
+                                          {% if deal.user.profile_picture %}
+                                              <img src="{{ deal.user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="48px" height="42px">
+                                          {% else %}
+                                              <!-- Si el usuario no tiene una imagen de perfil, puedes mostrar una imagen predeterminada -->
+                                              <img src="{{ url_for('static', filename='path/to/default_profile_image.jpg') }}" class="rounded-circle" alt="Default Profile Picture" width="32" height="32">
+                                          {% endif %}
+                                          <span class="ml-2">{{ deal.user.username }}</span>
+                                      </div>
+                                      <div class="col-6">
+                                          <a href="{{ url_for('view_deal', deal_id=deal.id) }}" class="btn btn-primary view_deal" style="background-color: #FF8700; border:none;">Katso tarjous</a>
+                                      </div>
+                                  </div>
+                              </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>                     
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p>Ei vielä julkaistuja diilejä.</p>
+                {% endif %}
+            </div>
+            </div>        
+      </div>
+    </div>
+</main>
+{% include 'footer.html' %}
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload deal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    
+    <!-- FontAwesome -->    
+    <script src="https://kit.fontawesome.com/07bb6b2702.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/uqkvm6yhcyni3linqju0gdkk0dhvnotkusowd0wst5um79ol/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+</head>
+<body>
+    <main>
+      <!-- Incluir el menú desde header.html -->
+      {% include 'header.html' %}
+      <div class="container" style="background-color: #FAB301; margin-top:20px; ">
+          <div class="row justify-content-center " >
+              <div class="col-12 col-md-10" style="margin-bottom: 15px;;">
+                  <h1>Please check if the offer is already shared:</h1>
+                  <form method="post" action="{{ url_for('upload_deal_form') }}" enctype="multipart/form-data" onsubmit="return validateForm()">
+                   
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3" >
+                        <label for="offer_link" class="form-label" style="font-weight: bold;">Tarjouksen linkki*</label>
+                        <input type="text" id="offer_link" name="offer_link" class="form-control" required>
+                        <button type="button" class="btn btn-warning" style="background-color: black; color:#fff;" onclick="checkDeal()">Tarkista linkki</button>
+                    </div>
+                    
+                      <div id="existingDealInfo" style="display: none;" >
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Tämä tarjous on jo olemassa:</h5><hr>
+                                <p class="card-text">Otsikko: <span id="existingTitle"></span></p>
+                                <p class="card-text">Kauppa: <span id="existingStore"></span></p>
+                                <p class="card-text">Tarjous hinta: €<span id="existingOfferPrice"></span></p>
+                                <p class="card-text">Normaali hinta: €<span id="existingRegularPrice"></span></p>
+                                <p class="card-text">Kuljetus: €<span id="existingShippingCost"></span></p>
+                                
+
+                            </div>
+                            <div class="mb-3 text-center">
+                                <button type="button" class="btn btn-primary" onclick="showOffer()">Tarkista tarjous</button>
+                            </div>
+                        </div>
+                       
+                    </div>
+                    
+
+         <div id="newDealInfo" style="display: none; font-weight: bold;">           
+                <div class="mb-3">
+                    <label for="title" class="form-label">Otsikko*</label>
+                    <input type="text" name="title" id="title" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="photos" class="form-label">Kuva/kuvia</label>
+                    <input type="file" id="photos" name="photos" class="form-control" accept="image/*" multiple required>
+                </div>
+                <div class="row">
+                <div class="col-md-6">
+                    <label for="offer_price" class="form-label">Tarjous hinta*</label>
+                    <input type="number" id="offer_price" name="offer_price" class="form-control" step="any" required>
+                </div>
+            
+                <div class="col-md-6">
+                    <label for="regular_price" class="form-label">Mormaali hinta*</label>
+                    <input type="number" id="regular_price" name="regular_price" class="form-control" step="any">
+                </div>
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Kuvaus*</label>
+                    <!-- Cambia el identificador de este textarea para que sea único -->
+                    <textarea id="description" name="description" class="form-control"  style="overflow-y: auto;min-height:300px;" required></textarea>
+                </div>
+
+                
+
+                <div class="mb-3">
+                    <label for="store" class="form-label">Myymälä*</label>
+                    <input type="text" name="store" id="store" class="form-control" required>
+                </div>
+            
+                <div class="row">
+                    <div class="col-md-6">
+                    <label for="discount_code" class="form-label">Alennus koodi</label>
+                    <input type="text" name="discount_code"  id="discount_code" class="form-control">
+                </div>
+            
+                <div class="col-md-6 mb-3">
+                    <label for="shipping_cost" class="form-label">Kuljetus*</label>
+                    <input type="number" name="shipping_cost" id="shipping_cost" class="form-control" step="any" placeholder="Esim: 3,99" required>
+                </div>
+                        
+                
+                <div class="row">
+                    <div class="col-md-6">
+                    <label for="start_date" class="form-label">Tarjous alkaa</label>
+                    <input type="date" id="start_date" name="start_date" class="form-control">
+                </div>
+            
+                <div class="mb-3 col-md-6">
+                    <label for="expiration_date" class="form-label">Tarjous loppuu*</label>
+                    <input type="date" id="expiration_date" name="expiration_date" class="form-control">
+                </div>
+            
+                <div class="mb-3 col-md-6">
+                    <label for="category" class="form-label">Kategoria</label>
+                    <select name="category" id="category" class="form-select" required>
+                        <option value="electronics">Elektroniikka</option>
+                        <option value="gaming">Gaming</option>
+                        <option value="Clothing">Vaatteet ja Muoti</option>
+                        <option value="food">Ruokaa ja Elintarvikeet</option>
+                        <option value="vehicles"> Ajoneuvot ja Koneet</option>
+                        <option value="travels">Matkat</option>
+                        <option value="cinema_books">Elokuvat ja Kirjat</option>
+                        <option value="health_beauty">Terveys ja kauneus</option>
+                        <option value="home_garden">Koti ja Puutarha</option>
+                        <option value="services">Palvelu</option>
+                        <option value="courses_education"> Kurssit ja Koulutukset</option>
+                        <!-- Agrega más opciones según sea necesario -->
+                    </select>
+                </div>
+                <div class="mb-3 text-center">
+                <button type="submit" class="btn btn-primary kirjaudu">Jaa tarjous</button>
+                </div>  
+            </form>
+            </div>
+        </div>
+        </div>
+        </div>
+    </main>
+
+    
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="{{ url_for('static', filename='js/toggle_nav.js') }}"></script>
+    {% include 'footer.html' %}
+
+    <script>
+        function validateForm() {
+            // Obtener el valor del campo "Offer Link"
+            var offerLink = document.getElementById("offer_link").value;
+      // Validar si el campo está vacío
+      if (offerLink.trim() === "") {
+            alert("Lisää oikea linkki.");
+            return false; // Evita que el formulario se envíe
+        }
+
+        // Validar el formato del enlace utilizando una expresión regular
+        var urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w.-]*)*\/?$/;
+        if (!urlPattern.test(offerLink)) {
+            alert("Anna voimassa oleva linkki.");
+            return false; // Evita que el formulario se envíe
+        }
+
+        // Si el campo no está vacío y el formato es correcto, permitir que el formulario se envíe
+        return true;
+    }
+
+
+
+        function checkDeal() {
+            // Obtener el enlace ingresado por el usuario
+            var offerLink = document.getElementById("offer_link").value;
+
+            if (offerLink.trim() === "") {
+                alert("Lisää oikea linkki.");
+                return;
+            }
+            // Hacer una solicitud al servidor para verificar la existencia del enlace
+            // Aquí puedes usar JavaScript para realizar una solicitud AJAX a tu backend
+            // y verificar si el enlace ya existe en la base de datos.
+
+            // Supongamos que tienes una ruta en tu backend que maneja la verificación del enlace
+            // Puedes usar fetch u otra biblioteca para realizar la solicitud al servidor
+            fetch(`/check_deal?offer_link=${encodeURIComponent(offerLink)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        // Si el trato existe, mostrar los detalles del trato existente
+                        document.getElementById("existingDealInfo").style.display = "block";
+                        document.getElementById("existingTitle").innerText = data.title;
+                        document.getElementById("existingStore").innerText = data.store;
+                        document.getElementById("existingOfferPrice").innerText = data.offer_price;
+                        document.getElementById("existingRegularPrice").innerText = data.regular_price;
+                        document.getElementById("existingShippingCost").innerText = data.shipping_cost;
+                        document.getElementById("existingCategory").innerText = data.category;
+                        document.getElementById("existingDiscountCode").innerText = data.discount_code;
+                        document.getElementById("existingExpirationDate").innerText = data.expiration_date;
+                        document.getElementById("existingStartDate").innerText = data.start_date;
+                        document.getElementById("existingPhotos").src = data.photos;
+                        // Agregar más detalles según sea necesario
+                        document.getElementById("newDealInfo").style.display = "none";
+                    } else {
+                        // Si el trato no existe, mostrar campos para un nuevo trato
+                        document.getElementById("existingDealInfo").style.display = "none";
+                        document.getElementById("newDealInfo").style.display = "block";
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        function showOffer() {
+        // Obtener el enlace existente y redirigir al usuario a esa URL
+        var offerLink = document.getElementById("offer_link").value;
+        window.location.href = offerLink;
+    }
+    </script>
+   
+</body>
+</html>
