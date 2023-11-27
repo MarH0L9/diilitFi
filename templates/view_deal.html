@@ -33,10 +33,17 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div> {% endif %} 
             {% endwith %}
+
+            {% if deal_finished %}
+            <div class="alert alert-warning mt-3">
+                <p style="font-weight: bold;">Dilli päättyi päivänä: {{ deal.finish_date.strftime('%d.%m.%Y %H:%M:%S') }} eikä ole enään saatavilla.</p>
+            </div>
+        {% endif %}
          </div>
          
-        <div class="container-deals-2">
+        <div class="container-deals-2" {% if deal_finished %}style="opacity: 0.5; pointer-events: none;"{% endif %}>
             <div class="main-column col-md-8 offset-md-2">
+               
                 <!-- Primera Card con dos columnas -->
                 <div class="central row g-0 "  >
                     <div class="row g-0 " >
@@ -49,7 +56,9 @@
                                         <div class="carousel-item {% if loop.first %}active{% endif %}">
                                             <img src="{{ image_path }}" alt="Deal Image" class="img-fluid">
                                         </div>
+                                        
                                     {% endfor %}
+                                    
                                 </div>
                                 <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
                                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -66,13 +75,13 @@
 
                     
 
-                    <div class="col-12 col-md-12 col-lg-7" >
+                    <div class="col-12 col-md-12 col-lg-8" >
                         <div class="card detail-title h-100" style="border:none;" >
                             <div class="card-body" >
                                 <div class="d-flex align-items-center" >
                                     <div class="d-flex align-items-center"  style="width:100%;">
                                         <div class="row align-items-center" style="width:100%;">
-                                            <div class="col rounded-pill p-2  d-flex align-items-center" style="border:solid 1px; border-color:rgb(196, 190, 190);" >
+                                            <div class="mr-2 rounded-pill p-2 d-flex align-items-center" style="border:solid 1px; width:120px; border-color:rgb(196, 190, 190);" >
                                                 {% if current_user.is_authenticated %}
                                                 <form method="post" action="{{ url_for('vote', deal_id=deal.id, vote_type='downvote') }}">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -171,12 +180,30 @@
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                                                        
-                                        <span class="card-text"> {% if user %}Shared by: {{ user.username }}{% endif %} </span>                                    
+                                    <div class="col-6">
+                                      
+                                    {% if deal.user.profile_picture %}
+                                    <img src="/{{ deal.user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="48px" height="42px">
+
+                                {% else %}
+                                    <!-- Si el usuario no tiene una imagen de perfil, puedes mostrar una imagen predeterminada -->
+                                    <img src="{{ url_for('static', filename='img/default_image.jpg') }}" class="rounded-circle" alt="Default Profile Picture" width="32" height="32">
+                                {% endif %}
+                                <span class="ml-2">{{ deal.user.username }}</span>
+                                    </div>                                    
                                 </div>
                                 <div class="row mb-3" style="margin:5px;">
                                     <a href="{{ deal.offer_link }}" class="btn btn-primary btn-warning"
                                         target="_blank" style="font-weight: bold;">Katso tarjous</a>
+                                </div>
+
+                                <div class="row mb-3" style="margin:5px;">
+                                    {% if current_user.is_authenticated and deal.user == current_user %}
+                                    <form method="post" action="{{ url_for('end_deal', deal_id=deal.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-danger">Lopeta diili</button>
+                                    </form>
+                                {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -207,7 +234,7 @@
                             <div class="card">
                                 <div class="d-flex justify-content-start" style="margin-top:10px;">
                                     <div class="comment-profile-picture me-3">                                        
-                                        <img src="{{ comment.user.profile_picture }}" alt="User Avatar" class="rounded-circle" width="40" height="40">
+                                        <img src="/{{ comment.user.profile_picture }}" alt="User Avatar" class="rounded-circle" width="40" height="40">
                                     </div>
                                     <div class="comment-info">
                                         <span style="margin-left:-120px;">{{ comment.user.username }}</span>

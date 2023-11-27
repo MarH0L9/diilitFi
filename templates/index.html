@@ -45,7 +45,7 @@
 
             
             <h2 class="text-center">Uusimmat tarjoukset</h2>
-            {% for deal in latest_deals.items %}
+            {% for deal in latest_deals.items if not deal.finished %}
             
             <div class="card mb-3 "  >                
                 <div class="row " >

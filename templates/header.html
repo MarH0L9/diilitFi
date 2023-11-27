@@ -6,7 +6,7 @@
   {% if current_user.is_authenticated %}
   
     <a href="{{ url_for('my_profile')}}" class="d-lg-none"> <!-- Ocultar en pantallas grandes -->
-      <img src="{{ current_user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="32" height="32">
+      <img src="/{{ current_user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="40" height="40">
       <span class="ml-2">{{ current_user.username }}</span>
     </a>
     <a class="nav-link d-lg-none" href="{{ url_for('logout') }}"> <!-- Ocultar en pantallas grandes -->
@@ -16,7 +16,7 @@
     <div class="d-none d-lg-flex justify-content-end align-items-center"> <!-- Mostrar solo en pantallas grandes -->
       <a href="{{ url_for('upload_deal_form') }}" style="background-color: #FAB301; color:#000;">Jaa uusi tarjous</a>
       <a href="{{ url_for('my_profile')}}" class="mr-3">
-        <img src="{{ current_user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="38" height="34">
+        <img src="/{{ current_user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="38" height="34">
         <span class="ml-2">{{ current_user.username }}</span>
       </a>
       <a class="nav-link" href="{{ url_for('logout') }}">

@@ -56,7 +56,7 @@
             <h2 class="text-center">Tarjoukset kategoriassa {{ category_name }}</h2>
             
             <!-- Itera sobre los deals de la categoría -->
-            {% for deal in category_deals %}
+            {% for deal in category_deals if not deal.finished %}
             <div class="card mb-3">
                 <div class="row">
                     <div class="col-12 col-lg-3 d-flex align-items-center"> 
@@ -170,7 +170,7 @@
             $(document).ready(function() {
                 $('.scrollmenu ul').slick({
                     infinite: false,
-                    slidesToShow: 6,
+                    slidesToShow: 5,
                     slidesToScroll: 1,
                     centerMode: false,
                     variableWidth: false,

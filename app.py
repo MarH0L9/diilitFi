@@ -106,6 +106,8 @@ class Deal(db.Model):
     upvotes = db.Column(db.Integer, default=0)
     downvotes = db.Column(db.Integer, default=0)
     votes = db.relationship('Vote', back_populates='deal')
+    finished = db.Column(db.Boolean, default=False)
+    finish_date = db.Column(db.DateTime)
     
     
     
@@ -123,6 +125,11 @@ class Deal(db.Model):
 
     def has_downvoted(self, user):
         return Vote.query.filter_by(user_id=user.id, deal_id=self.id, vote_type='downvote').first() is not None
+    
+    def end_deal(self):
+        self.finished = True
+        self.finish_date = datetime.utcnow()
+        db.session.commit()
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -233,16 +240,18 @@ def view_deal(deal_id):
 
     if deal:
         user = db.session.get(User, deal.user_id)
-        
-        print(f"Deal ID: {deal.id}")
-        print(f"User ID: {deal.user_id}")
-        print(f"User: {user}")          
+
+        # Verifica si el deal ha terminado
+        deal_finished = False
+    if deal.finished == 1:
+        deal_finished = True
+
         # If deal is found, render the view_deal.html template
-        return render_template('view_deal.html', deal=deal, user=user)
+        return render_template('view_deal.html', deal=deal, user=user, deal_finished=deal_finished)
     else:
         # If deal is not found, redirect to the index page and error message
-        flash('Deal not found', 'error')
-        return redirect(url_for('index'))
+        
+        return render_template('view_deal.html', deal=deal, user=user)
     
 @app.route('/add_comment/<int:deal_id>', methods=['POST'])
 @login_required
@@ -592,6 +601,21 @@ def upload_deal_form():
         return redirect(url_for('index'))  
 
     return render_template('upload_deal_form.html',  offer_link=offer_link)
+
+@app.route('/end_deal/<int:deal_id>', methods=['POST'])
+@login_required
+def end_deal(deal_id):
+    deal = Deal.query.get_or_404(deal_id)
+
+    # Verificar si el usuario que intenta terminar el deal es el propietario del deal
+    if current_user == deal.user:
+        # Realizar las acciones necesarias para "terminar" el deal
+        deal.end_deal()
+        flash('Deal terminado exitosamente', 'success')
+    else:
+        flash('No tienes permisos para terminar este deal', 'error')
+
+    return redirect(url_for('view_deal', deal_id=deal.id))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

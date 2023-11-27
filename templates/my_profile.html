@@ -98,7 +98,7 @@
                 <div class="row">
                     {% for deal in current_user.deals %}
                     
-                    <div class="card mb-3 "  >                
+                    <div class="card mb-3 "   >                
                       <div class="row " >
                           <div class="col-12 col-md-12 col-xl-3 d-flex align-items-center" > 
                               {% if deal.images %} 
@@ -191,7 +191,7 @@
                                           <span class="ml-2">{{ deal.user.username }}</span>
                                       </div>
                                       <div class="col-6">
-                                          <a href="{{ url_for('view_deal', deal_id=deal.id) }}" class="btn btn-primary view_deal" style="background-color: #FF8700; border:none;">Katso tarjous</a>
+                                          <a href="{{ url_for('view_deal', deal_id=deal.id) }}" class="btn btn-primary view_deal" style="background-color: #FAB301; border:none;">Katso tarjous</a>
                                       </div>
                                   </div>
                               </div>
