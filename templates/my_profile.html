@@ -29,7 +29,7 @@
                       <img src="{{ current_user.profile_picture }}" alt="Profile Picture">
                   {% else %}
                       <!-- Jos käyttäjällä ei ole profiilikuvaa, näytä oletuskuva tai paikantäyttökuva -->
-                      <img src="{{ url_for('static', filename='path/to/default_profile_image.jpg') }}" alt="Default Profile Picture">
+                      <img src="{{ url_for('static', filename='img/profile_pictures/default.jpg') }}" alt="Default Profile Picture">
                   {% endif %}
               </div>
             </div>
@@ -41,23 +41,23 @@
       </div>
   </div>
 <main>
-  <div class="container mt-5"> 
-    {% with messages = get_flashed_messages() %} 
-    {% if messages %} 
-    <div class="alert alert-info alert-dismissible fade show" role="alert">
-        <ul class="list-unstyled mb-0"> 
-            {% for message in messages %} 
-            <li>{{ message }}</li> 
-            {% endfor %} 
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div> {% endif %} 
-    {% endwith %}
- </div>
+    <div class="container mt-5" style="font-weight: bold;"> 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                    {{ message }}
+                
+            {% endfor %}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div> {% endif %} 
+        {% endwith %}
+     </div>
 
-        <div class="container mt-5">                   
+     <div class="container mt-5">
              <div class="row mb-3">                
-                    <h3>Lataa profiili kuva</h3>
+                    <h4>Lataa profiili kuva</h4>
                     <form method="POST" action="{{ url_for('upload_profile_picture') }}" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group">
@@ -67,8 +67,9 @@
                         <button type="submit" class="btn btn-primary">Lataa profiili kuva</button>
                     </form>                
              </div>
-             
-             <div class="row mb-3">
+
+                    
+             <div class="row"><hr>
               <h3>Vaihda salasana:</h3>
               <form method="POST" action="{{ url_for('change_password') }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -98,7 +99,7 @@
                 <div class="row">
                     {% for deal in current_user.deals %}
                     
-                    <div class="card mb-3 "   >                
+                    <div class="card mb-3 {% if deal.finished %}finished-deal{% endif %}">                
                       <div class="row " >
                           <div class="col-12 col-md-12 col-xl-3 d-flex align-items-center" > 
                               {% if deal.images %} 
@@ -115,13 +116,13 @@
                                       <div class="col-6 col-lg-4"  >
                                           <div class="mr-2 rounded-pill p-2 d-flex align-items-center" style="border:solid 1px; width:120px; border-color:rgb(196, 190, 190);" >                                        
                                                   <div class="mr-4">
-                                                      <button class="btn btn-link"><i class="fa-solid fa-heart-crack fa-xl" style="color: #200be0;"></i></button>
+                                                      <button class="btn btn-link" style="cursor: default;"><i class="fa-solid fa-heart-crack fa-xl" style="color: #200be0;"></i></button>
                                                   </div>
                                                   <div class="mr-4">                                    
                                                       {{ deal.total_votes() }}
                                                   </div>
                                                   <div class="mr-4">
-                                                      <button class="btn btn-link"><i class="fa-solid fa-heart fa-xl" style="color: #e00b0b;"></i></button>
+                                                      <button class="btn btn-link" style="cursor: default;"><i class="fa-solid fa-heart fa-xl" style="color: #e00b0b;"></i></button>
                                                   </div>                                        
                                           </div>
                                       </div>            
@@ -181,17 +182,12 @@
                                       </p>
                                   </p>
                                   <div class="row">
+                                     
                                       <div class="col-6">
-                                          {% if deal.user.profile_picture %}
-                                              <img src="{{ deal.user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="48px" height="42px">
-                                          {% else %}
-                                              <!-- Si el usuario no tiene una imagen de perfil, puedes mostrar una imagen predeterminada -->
-                                              <img src="{{ url_for('static', filename='path/to/default_profile_image.jpg') }}" class="rounded-circle" alt="Default Profile Picture" width="32" height="32">
-                                          {% endif %}
-                                          <span class="ml-2">{{ deal.user.username }}</span>
+                                          <a href="{{ url_for('view_deal', deal_id=deal.id) }}" class="btn btn view_deal">Katso tarjous</a>
                                       </div>
                                       <div class="col-6">
-                                          <a href="{{ url_for('view_deal', deal_id=deal.id) }}" class="btn btn-primary view_deal" style="background-color: #FAB301; border:none;">Katso tarjous</a>
+                                            <a href="{{ url_for('edit_deal', deal_id=deal.id) }}" class="btn btn edit">Muokkaa tarjous</a>
                                       </div>
                                   </div>
                               </div>
@@ -209,6 +205,11 @@
       </div>
     </div>
 </main>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+
 {% include 'footer.html' %}
 </body>
 </html>

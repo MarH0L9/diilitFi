@@ -1,0 +1,135 @@
+<!-- admin_dashboard.html -->
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Admin_Dashboard</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
+        <link rel="stylesheet" type="text/css"
+            href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+        <!-- FontAwesome -->
+        <script src="https://kit.fontawesome.com/07bb6b2702.js" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    </head>
+<body>
+    {% include 'header.html' %} 
+        {% include 'categories_menu.html' %}
+    <main>
+        <div class="container mt-5"> 
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                        {{ message }}
+                    
+                {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div> {% endif %} 
+            {% endwith %}
+         </div>
+
+        <div class="admin-table text-center" style="overflow-x:auto;margin-left:10%">
+                       
+            <h2>Diilit</h2>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Käyttäjä</th>
+                        <th>Otsikko</th>                      
+                        
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for deal in deals %}
+                    {% if deal.checked == 'No' %}
+                        <tr>
+                            <td>{{ deal.user.username }}</td>
+                            <td>{{ deal.title }}</td>                            
+                            <td>
+                                <a href="{{ url_for('view_deal', deal_id=deal.id) }}" class="btn btn-primary">Tarkista</a>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('edit_deal', deal_id=deal.id) }}" class="btn btn-warning">Muokkaa</a>
+                                    
+                            </td>
+                            <td>
+                                <button type="submit" class="btn btn-danger">Poista</button>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('validate_deal', deal_id=deal.id) }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-success">Hyväksy</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+
+
+
+
+    </main>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <script src="{{ url_for('static', filename='js/toggle_nav.js') }}"></script>
+       <script>
+        $(document).ready(function() {
+            $(document).ready(function() {
+                $('.scrollmenu ul').slick({
+                    infinite: false,
+                    slidesToShow: 5,
+                    slidesToScroll: 1,
+                    centerMode: false,
+                    variableWidth: false,
+                    responsive: [{
+                        breakpoint: 1600,
+                        settings: {
+                            slidesToShow: 4,
+                            slidesToScroll: 1,
+                        }
+                    }, {
+                        breakpoint: 943,
+                        settings: {
+                            slidesToShow: 2,
+                            slidesToScroll: 1,
+                        }
+                    }, {
+                        breakpoint: 715,
+                        settings: {
+                            slidesToShow: 2,
+                            slidesToScroll: 1,
+                        }
+                    }, {
+                        breakpoint: 699,
+                        settings: {
+                            slidesToShow: 2,
+                            slidesToScroll: 1,
+                        }
+                    }, {
+                        breakpoint: 480,
+                        settings: {
+                            slidesToShow: 1,
+                            slidesToScroll: 1,
+                        }
+                    }]
+                });
+            });
+        });
+    </script> 
+    {% include 'footer.html' %}
+</body>
+</html>

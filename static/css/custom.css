@@ -2,6 +2,7 @@ html, body {
     max-width: 100%;
     overflow-x: hidden;
     background-color: #f5f1f1;
+    font-family: 'Roboto', sans-serif;
 }
 
 
@@ -15,6 +16,10 @@ body {
     
 }
 
+.admin-table {
+    width:80%;
+    
+}
 .main {
     flex-grow: 1;
     background: transparent;
@@ -143,7 +148,10 @@ body {
     background-color: black;
 }
 
-
+.message {
+    width:50%;
+    align-self: center;
+}
 
 /* Navbar styles */
 .topnav {
@@ -162,9 +170,11 @@ body {
     font-size: 17px;
 }
 
+
 .topnav a:hover {
     background-color: #FAB301;
     color: black;
+
 }
 
 
@@ -184,6 +194,25 @@ body {
     color: #000;
 }
 
+.view_deal:hover {
+    background-color: #373538;
+    border:none;
+    color: #FFF;
+}
+
+
+.edit {
+    background-color: black;
+    border:none;
+    color: #FFF;
+}
+
+.edit:hover {
+    background-color: #373538;
+    border:none;
+    color: #FAB301;
+}
+
 /* Slick for categories */
 .pre-scrollmenu {
     background-color: #090909;
@@ -192,6 +221,11 @@ body {
 .scrollmenu {
     width: 95%;
     margin-left:15px;
+    margin-top: 10px;
+}
+
+.finished-deal {
+    opacity: 0.6; /* Cambia el valor según tu preferencia */
 }
 
 .slick-initialized .slick-slide{
@@ -313,7 +347,7 @@ body {
     margin-top: 45px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1198px) {
     .card-img-top {
         max-width: 60%;
         height: auto;
@@ -407,6 +441,9 @@ body {
         margin-top: 5px;
     }
 
+    .scrollmenu {
+        margin:auto;
+    }
     
     
 }
@@ -439,7 +476,7 @@ body {
     }
 
     body {
-        overflow-x: hidden; /* Evitar el desplazamiento en dispositivos móviles */
+        overflow-x: hidden; 
     }
 
    
@@ -458,7 +495,7 @@ body {
 
     .carousel-item {
         max-width: 80%;
-        max-height: auto; /* ajusta la altura máxima según tus preferencias */
+        max-height: auto; 
         margin-left:30px;
         margin-top: 5px;
     }
@@ -466,7 +503,6 @@ body {
     .card {
         border:none;
     }
-
   
     
 }

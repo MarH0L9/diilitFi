@@ -16,6 +16,9 @@
 
 <body>
     <main>
+
+
+
         <!-- Incluir el menú desde header.html --> 
         {% include 'header.html' %}
         <div class="row mb3" style="background-color: #FAB301; ">        
@@ -56,7 +59,7 @@
             <h2 class="text-center">Tarjoukset kategoriassa {{ category_name }}</h2>
             
             <!-- Itera sobre los deals de la categoría -->
-            {% for deal in category_deals if not deal.finished %}
+            {% for deal in category_deals if not deal.finished deal.checked == 'Yes' %}
             <div class="card mb-3">
                 <div class="row">
                     <div class="col-12 col-lg-3 d-flex align-items-center"> 
@@ -139,10 +142,10 @@
                                 <div class="row">
                                     <div class="col-6">
                                         {% if deal.user.profile_picture %}
-                                            <img src="{{ deal.user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="48px" height="42px">
+                                        <img src="/{{ deal.user.profile_picture }}" class="rounded-circle" alt="Profile Picture" width="48px" height="42px">
                                         {% else %}
                                             <!-- Si el usuario no tiene una imagen de perfil, puedes mostrar una imagen predeterminada -->
-                                            <img src="{{ url_for('static', filename='path/to/default_profile_image.jpg') }}" class="rounded-circle" alt="Default Profile Picture" width="32" height="32">
+                                            <img src="{{ url_for('static', filename='img/profile_pictures/default.jpg') }}" class="rounded-circle" alt="Default Profile Picture" width="40px" height="42px">
                                         {% endif %}
                                         <span class="ml-2">{{ deal.user.username }}</span>
                                     </div>
@@ -155,10 +158,62 @@
                         </div>
                     </div>
                 </div> 
+
+                <script>
+              
+                    document.addEventListener("DOMContentLoaded", function() {
+                  var publishDateElement = document.getElementById("publishDate{{ deal.id }}");
+      
+                  if (publishDateElement) {
+                      var dealDate = new Date("{{ deal.publish_date }}");
+                      var now = new Date();
+                      var timeDiff = now - dealDate;
+                      var seconds = Math.floor(timeDiff / 1000);
+                      var minutes = Math.floor(seconds / 60);
+                      var hours = Math.floor(minutes / 60);
+                      var days = Math.floor(hours / 24);
+      
+                      if (days > 1) {
+                          // Si ha pasado más de 1 dia, muestra la fecha completa
+                          var options = { month: 'long', day: 'numeric' };
+                          var formattedDate = dealDate.toLocaleDateString('fi-FI', options);
+                          publishDateElement.innerHTML = "  " + formattedDate;
+                      } else if (days > 0) {
+                          publishDateElement.innerHTML = "Julkaistu " + days + (days === 1 ? " päivä sitten" : " päivää sitten");
+                      } else if (hours > 0) {
+                          publishDateElement.innerHTML = "Julkaistu " + hours + (hours === 1 ? " tunti sitten" : " tuntia sitten");
+                      } else if (minutes > 0) {
+                          publishDateElement.innerHTML = "Julkaistu " + minutes + (minutes === 1 ? " minuutti sitten" : " minuuttia sitten");
+                      } else {
+                          publishDateElement.innerHTML = "Julkaistu hetki sitten";
+                      }
+                  }
+              });
+                  </script>
                 {% endfor %}
-            
-            <!-- No hay paginación ya que estás usando una lista simple -->
-        </div>
+                <div class="row mb-3">
+                    <div class="pagination d-flex justify-content-center mt-4">
+                        {% if category_deals.has_prev %} 
+                            <a href="{{ url_for('category', category=category, page=category_deals.prev_num) }}" class="btn btn-outline-primary">&laquo; Previous</a> 
+                        {% endif %}
+                        
+                        {% for num in category_deals.iter_pages() %} 
+                            {% if num %} 
+                                {% if num == category_deals.page %} 
+                                    <button type="button" class="btn btn-primary">{{ num }}</button> 
+                                {% else %} 
+                                    <a href="{{ url_for('category', category=category, page=num) }}" class="btn btn-outline-primary">{{ num }}</a> 
+                                {% endif %} 
+                            {% else %} 
+                                <span class="btn btn-outline-secondary disabled">...</span> 
+                            {% endif %} 
+                        {% endfor %}
+                        
+                        {% if category_deals.has_next %} 
+                            <a href="{{ url_for('category', category=category, page=category_deals.next_num) }}" class="btn btn-outline-primary">Next &raquo;</a> 
+                        {% endif %} 
+                    </div>
+                </div>
     </main>
     
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>

@@ -1,11 +1,12 @@
-from flask import Flask, g, render_template, request, jsonify, url_for, redirect, flash, session
+from flask import Flask, g, render_template, request, jsonify, url_for, redirect, flash, session,  make_response
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func, desc
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, EqualTo, ValidationError
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField, DecimalField, BooleanField
+from wtforms.validators import DataRequired, EqualTo, ValidationError, Length
 from flask_migrate import Migrate
 from decouple import config
 from flask_mail import Mail, Message
@@ -21,6 +22,7 @@ from decimal import Decimal
 from sqlalchemy import DECIMAL, or_
 import pytz
 from flask_wtf.csrf import CSRFProtect
+import uuid
 
 #from flask_babel import Babel, _
 
@@ -67,7 +69,9 @@ class User(db.Model, UserMixin):
     confirmed = db.Column(db.Boolean, default=False)
     confirmed_on = db.Column(db.DateTime, nullable=True)
     profile_picture = db.Column(db.String(255), nullable=True)
+    role = db.Column(db.String(20), default='user')
     votes = db.relationship('Vote', back_populates='user')
+
     
 
     def __init__(self, username, email, password):  # Agregamos email al constructor
@@ -84,6 +88,10 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return f'<{self.username}>'
+    
+    def total_deals(self):
+        # Puedes personalizar esta lógica según cómo estás almacenando los deals en tu modelo
+        return Deal.query.filter_by(user=self).count()
     
 class Deal(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -108,6 +116,7 @@ class Deal(db.Model):
     votes = db.relationship('Vote', back_populates='deal')
     finished = db.Column(db.Boolean, default=False)
     finish_date = db.Column(db.DateTime)
+    checked = db.Column(db.String(10), default='No')
     
     
     
@@ -125,6 +134,14 @@ class Deal(db.Model):
 
     def has_downvoted(self, user):
         return Vote.query.filter_by(user_id=user.id, deal_id=self.id, vote_type='downvote').first() is not None
+    
+    def score(self):
+        return self.upvotes - self.downvotes
+    
+    
+    @classmethod
+    def get_deal_by_id(cls, deal_id):
+        return db.session.query(cls).get(deal_id)
     
     def end_deal(self):
         self.finished = True
@@ -156,7 +173,24 @@ class Comment(db.Model):
     user = db.relationship('User', backref='comments')
     deal_id = db.Column(db.Integer, db.ForeignKey('deal.id'))
     deal = db.relationship('Deal', backref='comments')
-       
+    checked = db.Column(db.String(10), default='No')
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField('Vanha salasana', validators=[DataRequired()])
+    new_password = PasswordField('Uusi salasana', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Uusi salasana uudestaan', validators=[DataRequired(), EqualTo('new_password')])
+    submit = SubmitField('Muokkaa salasana')
+
+class CommentForm(FlaskForm):
+    text = TextAreaField('Comment', validators=[DataRequired()])
+    submit = SubmitField('Update Comment')
+
+
+class RememberMeToken(db.Model):
+    __tablename__ = 'remember_me_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(100), unique=True, nullable=False)
 
 # Flask-Login configuration
 login_manager = LoginManager()
@@ -193,28 +227,57 @@ class RegistrationForm(FlaskForm):
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('muista_minut')    
     submit = SubmitField('Login')
 
+class DealForm(FlaskForm):
+    title = StringField('title', validators=[DataRequired()])
+    description = TextAreaField('description', validators=[DataRequired()])
+    offer_price = DecimalField('offer_price', validators=[DataRequired()])
+    regular_price = DecimalField('regular_price', validators=[DataRequired()])
+    store = StringField('store', validators=[DataRequired()])
+    expiration_date = StringField('expiration_date', validators=[DataRequired()])
+    discount_code = StringField('discount_code')
+    shipping_cost = DecimalField('shipping_cost', validators=[DataRequired()])
+    start_date = StringField('start_date')
+    category = StringField('category', validators=[DataRequired()])
+    submit = SubmitField('Update Deal')
 
 
 
 #Routes  
 @app.route('/')
 def index():
-    page = request.args.get('page', 1, type=int)  # Obtains the current page number
-    per_page = 10  # Number of deals per page
-    
+    # Obtén el tipo de orden desde los parámetros de la consulta (default: 'newest')
+    order_by = request.args.get('order_by', 'newest')
 
-    # Obtain the latest deals from the database
-    latest_deals = Deal.query.order_by(Deal.publish_date.desc()).paginate(page=page, per_page=per_page, error_out=False)
-    image_paths = [deal.photos for deal in latest_deals.items]
-    return render_template('index.html', latest_deals=latest_deals, image_paths=image_paths,json_module=json)
+    # Determina la columna de orden según el tipo de orden especificado
+    if order_by == 'popularity':
+        order_column = (func.coalesce(Deal.upvotes, 0) - func.coalesce(Deal.downvotes, 0)).label('vote_difference')
+    else:
+        order_column = Deal.publish_date
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    # Realiza la consulta ordenada y paginada
+    if order_by == 'popularity':
+        # Filtra por las ofertas más populares
+        deals = Deal.query.order_by(order_column.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    else:
+        # Filtra por las ofertas más recientes (por defecto)
+        deals = Deal.query.order_by(order_column.desc()).paginate(page=page, per_page=per_page, error_out=False)
+
+    image_paths = [deal.photos for deal in deals.items]
+    
+    return render_template('index.html', latest_deals=deals, image_paths=image_paths, json_module=json, order_by=order_by)
 
 
 @app.route('/category/<category>')
 def category(category):
     page = request.args.get('page', 1, type=int)
-    deals_in_category = Deal.query.filter_by(category=category).paginate(page=page, per_page=10)
+    deals_in_category = Deal.query.filter_by(category=category).order_by(Deal.publish_date.desc()).paginate(page=page, per_page=10)
+    
     category_names = {
         'electronics': 'Elektroniikka',
         'gaming': 'Gaming',
@@ -225,13 +288,10 @@ def category(category):
         'vehicles': 'Autot ja Ajoneuvot',
         'cinema_books': 'Elokuvat ja Kirjat',
         'services': 'Palvelut',
-        'course_education' : 'Kurssit ja Koulutus',
-        # ... Otros mapeos
+        'course_education': 'Kurssit ja Koulutus',
     }
 
-
     return render_template('category.html', category=category, category_name=category_names.get(category, category), category_deals=deals_in_category)
-
 
 @app.route('/view_deal/<int:deal_id>')
 def view_deal(deal_id):
@@ -277,6 +337,45 @@ def add_comment(deal_id):
         flash('Diilia ei löydy', 'error')
 
     return redirect(url_for('index'))
+
+@app.route('/edit_comment/<int:comment_id>', methods=['GET', 'POST'])
+@login_required
+def edit_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+
+    # Verify if the current user is the owner of the comment
+    if current_user != comment.user:
+        flash('You do not have permission to edit this comment.', 'danger')
+        return redirect(url_for('index'))
+
+    form = CommentForm()
+
+    if form.validate_on_submit():
+        comment.text = form.text.data
+        db.session.commit()
+        flash('Comment updated successfully!', 'success')
+        return redirect(url_for('view_deal', deal_id=comment.deal.id))
+
+    elif request.method == 'GET':
+        form.text.data = comment.text
+
+    return render_template('edit_comment.html', form=form, comment=comment)
+
+@app.route('/delete_comment/<int:comment_id>', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+
+    # Verify if the current user is the owner of the comment
+    if current_user != comment.user:
+        flash('You do not have permission to delete this comment.', 'danger')
+        return redirect(url_for('index'))
+
+    db.session.delete(comment)
+    db.session.commit()
+
+    flash('Comment deleted successfully!', 'success')
+    return redirect(url_for('view_deal', deal_id=comment.deal.id))
 
 
 
@@ -394,6 +493,36 @@ def upvote(deal_id):
     db.session.commit()
 
     return jsonify({'success': True})
+
+
+@app.route('/dashboard')
+def dashboard():
+    if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            # Obtén todos los deals de la base de datos
+            deals = Deal.query.all()
+            return render_template('admin_dashboard.html', deals=deals)
+        else:
+            return render_template('index.html')
+    else:
+        # Redirigir a la página de inicio de sesión si el usuario no está autenticado
+        return redirect(url_for('login'))
+    
+
+@app.route('/validate_deal/<int:deal_id>', methods=['POST'])
+def validate_deal(deal_id):
+    # Aquí deberías realizar la lógica necesaria para cambiar el estado de `checked` a "Yes" en tu base de datos.
+    # Esto es solo un ejemplo, y debes adaptarlo según tu modelo de datos.
+    
+    # Por ejemplo, si `Deal` tiene un atributo `checked` que es un enum ('Yes' o 'No'), podrías hacer algo como:
+    deal = Deal.query.get(deal_id)
+    deal.checked = 'Yes'
+    db.session.commit()
+
+    flash('Diili on hyväksytty', 'success')
+    
+    # Redirige de nuevo a la página del panel de administración
+    return redirect(url_for('dashboard'))
 
 @app.route('/upload_profile_picture', methods=['POST'])
 @login_required
@@ -602,6 +731,50 @@ def upload_deal_form():
 
     return render_template('upload_deal_form.html',  offer_link=offer_link)
 
+@app.route('/edit_deal/<int:deal_id>', methods=['GET', 'POST'])
+@login_required
+def edit_deal(deal_id):
+    deal = Deal.get_deal_by_id(deal_id)
+    
+    # Verifica si el usuario actual es el propietario de la oferta
+    if deal.user != current_user:
+        flash('Sinulla ei ole lupaa muokata tätä tarjousta.', 'danger')
+        return redirect(url_for('index'))
+
+    form = DealForm()
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            deal.title = form.title.data
+            deal.description = form.description.data
+            deal.offer_price = form.offer_price.data
+            deal.regular_price = form.regular_price.data
+            deal.store = form.store.data
+            deal.expiration_date = form.expiration_date.data
+            deal.discount_code = form.discount_code.data
+            deal.shipping_cost = form.shipping_cost.data
+            deal.start_date = form.start_date.data
+            deal.category = form.category.data
+            deal.photos = json.dumps([])  # Alustaa tyhjän listan, johon lisätään kuvien polut myöhemmin
+
+            db.session.commit()
+            flash('Diilin päivitys onnistui.', 'success')
+            return redirect(url_for('my_profile'))
+
+    elif request.method == 'GET':
+        # Puedes prellenar el formulario con los valores actuales de la oferta
+        form.title.data = deal.title
+        form.description.data = deal.description
+        form.offer_price.data = deal.offer_price
+        form.regular_price.data = deal.regular_price
+        form.store.data = deal.store
+        form.expiration_date.data = deal.expiration_date
+        form.start_date.data = deal.start_date
+        form.discount_code.data = deal.discount_code
+        form.shipping_cost.data = deal.shipping_cost        
+        form.category.data = deal.category
+
+    return render_template('edit_deal.html', title='Edit Deal', form=form, deal=deal)
+
 @app.route('/end_deal/<int:deal_id>', methods=['POST'])
 @login_required
 def end_deal(deal_id):
@@ -611,9 +784,9 @@ def end_deal(deal_id):
     if current_user == deal.user:
         # Realizar las acciones necesarias para "terminar" el deal
         deal.end_deal()
-        flash('Deal terminado exitosamente', 'success')
+        flash('Diili poisto onnistui', 'success')
     else:
-        flash('No tienes permisos para terminar este deal', 'error')
+        flash('Et voi poistaa diilia', 'error')
 
     return redirect(url_for('view_deal', deal_id=deal.id))
 
@@ -629,11 +802,26 @@ def login():
 
         if user and user.check_password(form.password.data):
             login_user(user)
+
+            if form.remember_me.data:
+                # Generar un token único y almacenarlo en una cookie
+                token = str(uuid.uuid4())
+                save_remember_token(user.id, token)
+
+                response = make_response(redirect(url_for('index')))
+                response.set_cookie('remember_token', token, max_age=30*24*60*60)  # La cookie expira en 30 días
+                return response
+
             return redirect(url_for('index'))
         else:
             flash('Kirjautuminen epäonnistui. Tarkista käyttäjätunnuksesi ja salasanasi.', 'danger')
 
     return render_template('login.html', form=form)
+
+def save_remember_token(user_id, token):
+    remember_me_token = RememberMeToken(user_id=user_id, token=token)
+    db.session.add(remember_me_token)
+    db.session.commit()
 
     
 @app.route('/logout')
@@ -643,34 +831,53 @@ def logout():
     flash('Uloskirjautuminen onnistui', 'success')
     return redirect(url_for('login'))
 
+
 @app.route('/change_password', methods=['POST'])
 @login_required
 def change_password():
-    # Salasanan muuttaminen loogika
-    current_password = request.form.get('current_password')
-    new_password = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
+    form = ChangePasswordForm(request.form)
 
-    # Tarkista, onko nykyinen salasana oikein
-    if not check_password_hash(current_user.password, current_password):
-        flash('Current password is incorrect.', 'danger')
-        return redirect(url_for('my_profile'))
+    if form.validate_on_submit():
+        current_password = form.current_password.data
+        new_password = form.new_password.data
+        confirm_password = form.confirm_password.data
 
-    # Tarkista, onko uusi salasana sama kuin vahvistettu salasana
-    if new_password != confirm_password:
-        flash('New passwords do not match.', 'danger')
-        return redirect(url_for('my_profile'))
+        # Tarkista, onko nykyinen salasana oikein
+        if not current_user.check_password(current_password):
+            flash('Nykyinen salasana on virheellinen.', 'danger')
+            return redirect(url_for('my_profile'))
 
-    # Generoidaan uusi salasanan hash
-    new_password_hash = generate_password_hash(new_password, method='sha256')
+        # Tarkista, onko uusi salasana sama kuin vahvistettu salasana
+        if new_password != confirm_password:
+            flash('Uudet salasanat eivät täsmää.', 'danger')
+            return redirect(url_for('my_profile'))
 
-    # Päivitys tietokantaan
-    current_user.password = new_password_hash
-    db.session.commit()
+        # Verificar la longitud mínima de la nueva contraseña
+        if len(new_password) < 6:  # Ajusta la longitud mínima según tus necesidades
+            flash('Uusi salasana on liian lyhyt.', 'danger')
+            return redirect(url_for('my_profile'))
 
-    flash('Password changed successfully!', 'success')
+        try:
+            # Generoidaan uusi salasanan hash
+            new_password_hash = User.hash_password(new_password)
+
+            # Päivitys tietokantaan
+            current_user.password = new_password_hash
+            db.session.commit()
+
+            flash('Salasanan vaihto onnistui!', 'success')
+            return redirect(url_for('my_profile'))
+        except Exception as e:
+            # Manejar excepciones de base de datos u otras excepciones
+            flash('Virhe salasanan vaihdossa.', 'danger')
+            return redirect(url_for('my_profile'))
+
+    # Si el formulario no es válido, muestra mensajes de error en el formulario
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(f'{field.capitalize()}: {error}', 'danger')
+
     return redirect(url_for('my_profile'))
-
 
 
 if __name__ == "__main__":

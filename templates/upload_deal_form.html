@@ -69,7 +69,7 @@
                 </div>
             
                 <div class="col-md-6">
-                    <label for="regular_price" class="form-label">Mormaali hinta*</label>
+                    <label for="regular_price" class="form-label">Normaali hinta*</label>
                     <input type="number" id="regular_price" name="regular_price" class="form-control" step="any">
                 </div>
                 </div>
@@ -139,28 +139,24 @@
     
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="{{ url_for('static', filename='js/toggle_nav.js') }}"></script>
-    {% include 'footer.html' %}
+    
+    
 
     <script>
-        function validateForm() {
+          function validateForm() {
             // Obtener el valor del campo "Offer Link"
             var offerLink = document.getElementById("offer_link").value;
-      // Validar si el campo está vacío
-      if (offerLink.trim() === "") {
-            alert("Lisää oikea linkki.");
-            return false; // Evita que el formulario se envíe
+
+            // Validar si el campo está vacío
+            if (offerLink.trim() === "") {
+                alert("Please enter the Offer Link.");
+                return false; // Evita que el formulario se envíe
+            }
+
+            // Si el campo no está vacío, permitir que el formulario se envíe
+            return true;
         }
 
-        // Validar el formato del enlace utilizando una expresión regular
-        var urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w.-]*)*\/?$/;
-        if (!urlPattern.test(offerLink)) {
-            alert("Anna voimassa oleva linkki.");
-            return false; // Evita que el formulario se envíe
-        }
-
-        // Si el campo no está vacío y el formato es correcto, permitir que el formulario se envíe
-        return true;
-    }
 
 
 
@@ -210,6 +206,6 @@
         window.location.href = offerLink;
     }
     </script>
-   
+   {% include 'footer.html' %}
 </body>
 </html>
