@@ -1,4 +1,4 @@
-# tarjousmittari
+# DiilitFI
 
 home view:
 ![image](https://github.com/MarH0L9/tarjousmittari/assets/143179277/477c6084-ed38-4e0d-8233-f8d61e02ac3e)
