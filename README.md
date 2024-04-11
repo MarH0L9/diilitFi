@@ -34,7 +34,7 @@ Although the option to reply to comments is not yet implemented, users can leave
 - HTML
 - CSS
 - JavaScript
-- 
+
 #### Backend:
 - Python Flask
   
